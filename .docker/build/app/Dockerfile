@@ -10,7 +10,9 @@ VOLUME [ "/var/www/" ]
 
 COPY entrypoint.sh /
 RUN  chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT ["/entrypoint.sh"]
+
+RUN npm install -g npm@10.4.0
 
 USER node
 WORKDIR /var/www/

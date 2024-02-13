@@ -57,8 +57,10 @@ services:
       - NODE_OPTIONS=--openssl-legacy-provider
     working_dir: /var/www/
     volumes:
-      - .:/var/www
-    # command: npm run serve
+      - ./backend:/var/www
+    command: npm run serve
+    # entrypoint: ./entrypoint.sh
+    tty: true
     depends_on:
       - proxy
     labels:
@@ -67,5 +69,5 @@ services:
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
-      # - "traefik.http.routers.backend.middlewares=strip-api-prefix@docker"
-      # - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.backend.middlewares=strip-api-prefix@docker"
+      - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
