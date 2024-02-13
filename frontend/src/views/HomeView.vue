@@ -2,14 +2,14 @@
 import { ref } from 'vue'
 import HelloWorld from '../components/HelloWorld.vue'
 import BoardgameList from '../components/BoardgameList.vue'
+import { useBoardgameService } from '../composables/BoardgameService.js'
 
 const boardgames = ref([])
+const service = useBoardgameService('v2')
 
-fetch('/api/boardgames/')
-  .then(response => response.json())
-  .then(({data}) => {
-    boardgames.value = data
-  })
+service.list().then(response => {
+  boardgames.value = response
+})
 
 </script>
 

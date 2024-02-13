@@ -45,7 +45,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${APP_URL}`) && !PathPrefix(`${APP_API_BASE_PATH}`)"
+      - "traefik.http.routers.frontend.rule=Host(`${APP_URL}`) && !PathPrefix(`${APP_API_BASE_PATH_LARAVEL}`) && !PathPrefix(`${APP_API_BASE_PATH_NODE}`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
@@ -63,14 +63,15 @@ services:
     tty: true
     depends_on:
       - proxy
-    # labels:
-    #   - "traefik.enable=true"
-    #   - "traefik.http.routers.backend.rule=Host(`${APP_URL}`) && PathPrefix(`${APP_API_BASE_PATH}`)"
-    #   - "traefik.http.routers.backend.entrypoints=websecure"
-    #   - "traefik.http.routers.backend.tls=true"
-    #   - "traefik.http.services.backend.loadbalancer.server.port=8080"
-    #   - "traefik.http.routers.backend.middlewares=strip-api-prefix@docker"
-    #   - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${APP_URL}`) && PathPrefix(`${APP_API_BASE_PATH_NODE}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      - "traefik.http.routers.backend.middlewares=backend_repath"
+      - "traefik.http.middlewares.backend_repath.replacepathregex.regex=^${APP_API_BASE_PATH_NODE}/(.*)"
+      - "traefik.http.middlewares.backend_repath.replacepathregex.replacement=/$${1}"
 
   backend-laravel:
     image: rpopuc/php-fpm-nginx:8.3
@@ -78,8 +79,11 @@ services:
       - ./backend-laravel:/var/www
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.laravel.rule=Host(`${APP_URL}`) && PathPrefix(`${APP_API_BASE_PATH}`)"
+      - "traefik.http.routers.laravel.rule=Host(`${APP_URL}`) && PathPrefix(`${APP_API_BASE_PATH_LARAVEL}`)"
       - "traefik.http.routers.laravel.entrypoints=websecure"
       - "traefik.http.routers.laravel.tls=true"
-    ports:
-      - "8080:80"
+      - "traefik.http.routers.laravel.middlewares=laravel_repath"
+      - "traefik.http.middlewares.laravel_repath.replacepathregex.regex=^${APP_API_BASE_PATH_LARAVEL}/(.*)"
+      - "traefik.http.middlewares.laravel_repath.replacepathregex.replacement=/api/$${1}"
+
+

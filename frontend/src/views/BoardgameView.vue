@@ -3,19 +3,18 @@ import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import HelloWorld from '../components/HelloWorld.vue'
 import BoardgameList from '../components/BoardgameList.vue'
+import { useBoardgameService } from '../composables/BoardgameService.js'
 
 const boardgame = ref()
 
 // Use route to get boargameId from query string param
 const route = useRoute()
 const boardgameId = route.params.id
+const service = useBoardgameService('v2')
 
-fetch(`/api/boardgames/${boardgameId}`)
-  .then(response => response.json())
-  .then(({data}) => {
-    boardgame.value = data
-  })
-
+service.show(boardgameId).then(response => {
+  boardgame.value = response
+})
 </script>
 
 <template>
