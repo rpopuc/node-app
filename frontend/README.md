@@ -1,2 +1,2 @@
-# Node app
+# Node app frontend
 
