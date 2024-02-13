@@ -1,0 +1,71 @@
+version: "3"
+
+name: node-app
+
+services:
+  proxy:
+    image: traefik:v2.5
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesResolvers.myresolver.acme.httpChallenge.entryPoint=web"
+      - "--certificatesResolvers.myresolver.acme.email=youremail@example.com"
+      - "--certificatesResolvers.myresolver.acme.storage=/acme.json"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entryPoint.permanent=true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ".docker/config/traefik/acme.json:/acme.json"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`proxy.local`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+
+  frontend:
+    build:
+      context: .docker/build/app
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
+    working_dir: /var/www/
+    command: npm run dev
+    volumes:
+      - ./frontend:/var/www
+      - ./public:/var/www/dist
+    depends_on:
+      - proxy
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${APP_URL}`) && !PathPrefix(`${APP_API_BASE_PATH}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.services.frontend.loadbalancer.server.port=8080"
+
+  backend:
+    build:
+      context: .docker/build/app
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
+    working_dir: /var/www/
+    volumes:
+      - .:/var/www
+    # command: npm run serve
+    depends_on:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${APP_URL}`) && PathPrefix(`${APP_API_BASE_PATH}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      # - "traefik.http.routers.backend.middlewares=strip-api-prefix@docker"
+      # - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
